@@ -195,8 +195,11 @@ wait_for_process_env "$owned_pid" "OMARCHY_CAPTURE_REGION_PICKER=1" ||
   fail "tagged slurp exposes its picker marker before capture control"
 
 PATH="$tmpdir/control-bin:$PATH" XDG_RUNTIME_DIR="$tmpdir" "$ROOT/bin/omarchy-capture-region" --take-window
-wait "$owned_pid" 2>/dev/null || true
+owned_status=0
+wait "$owned_pid" 2>/dev/null || owned_status=$?
 owned_pid=""
+# 143 is SIGTERM; a fake picker left to finish its sleep exits 0.
+(( owned_status == 143 )) || fail "capture control terminates the tagged slurp" "wait status $owned_status"
 
 kill -0 "$plain_pid" 2>/dev/null || fail "capture control preserves unowned slurp processes"
 [[ -e $tmpdir/omarchy-capture-region-window ]] || fail "capture control records the requested picker action"
